@@ -26,8 +26,24 @@ class ComplexMatrix:
 
         return self
 
+    def replace_row(self, index1, index2):
+        first_row = self.values[index1][:]
+        self.values[index1] = self.values[index2][:]
+        self.values[index2] = first_row
+
 
 class RealMatrix(ComplexMatrix):
     @staticmethod
     def prompt_row_values():
         return list(map(int, input().split(' ')))
+
+    def print_values(self):
+        def round_if_needed(number):
+            if round(number, 1) != number:
+                return "%.2f" % round(number, 2)
+            return "%.1f" % number
+
+        for i in range(self.m):
+            print(" ".join([str(round_if_needed(number)) for number in self.values[i]]))
+
+        return self

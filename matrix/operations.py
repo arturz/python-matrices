@@ -1,4 +1,4 @@
-from .matrices import ComplexMatrix
+from .matrices import ComplexMatrix, RealMatrix
 
 
 class BasicOperations(ComplexMatrix):
@@ -70,3 +70,50 @@ class BasicOperations(ComplexMatrix):
         [self.m, self.n] = [self.n, self.m]
 
         return self
+
+
+class ReducedRowEchelonForm(RealMatrix):
+    def find_not_zero_cell(self, offset_rows, offset_columns):
+        for x in range(offset_columns, self.n):
+            for y in range(offset_rows, self.m):
+                if self.values[y][x] != 0:
+                    return y, x
+
+        return None, None
+
+    def make(self):
+        offset_rows = 0
+        offset_columns = 0
+
+        for _ in range(self.m):
+            y, x = self.find_not_zero_cell(offset_rows, offset_columns)
+            if y is None and x is None:
+                break
+
+            self.replace_row(y, offset_rows)
+            y = offset_rows
+
+            divide_by = self.values[y][x]
+            for i in range(offset_columns, self.n):
+                self.values[y][i] = self.values[y][i] / divide_by
+
+            for row in range(self.m):
+                if row != y:
+                    multiplier = self.values[row][x]
+                    for i in range(offset_columns, self.n):
+                        self.values[row][i] = self.values[row][i] - self.values[y][i] * multiplier
+
+            offset_rows = y + 1
+            offset_columns = x + 1
+
+        return self
+
+    def print_rank(self):  # rząd
+        rank = 0
+        for row in range(self.m):
+            if any(cell != 0 for cell in self.values[row]):
+                rank = rank + 1
+        print(rank)
+
+        return self
+

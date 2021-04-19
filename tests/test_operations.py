@@ -1,5 +1,5 @@
 from unittest import TestCase
-from matrix.operations import BasicOperations
+from matrix.operations import BasicOperations, ReducedRowEchelonForm
 from helpers.utils import make_list, mock_input, assert_output
 
 
@@ -121,3 +121,29 @@ class TestBasicOperations(TestCase):
         m1 = BasicOperations().prompt_values()
         m2 = BasicOperations().prompt_values()
         m1.mulmat(m2).print_values()
+
+
+class TestReducedRowEchelonForm(TestCase):
+    @mock_input(make_list("""
+        3 4
+        4 2 4 12
+        2 1 4 7
+        2 1 0 5
+    """))
+    @assert_output(make_list("""
+        1.0 0.5 0.0 2.5
+        0.0 0.0 1.0 0.5
+        0.0 0.0 0.0 0.0
+    """))
+    def test_reduced_row_echelon_form(self):
+        ReducedRowEchelonForm().prompt_values().make().print_values()
+
+    @mock_input(make_list("""
+        3 4
+        4 2 4 12
+        2 1 4 7
+        2 1 0 5
+    """))
+    @assert_output(["2"])
+    def test_reduced_row_echelon_form_rank(self):
+        ReducedRowEchelonForm().prompt_values().make().print_rank()
