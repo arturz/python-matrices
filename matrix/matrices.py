@@ -1,3 +1,5 @@
+from fractions import Fraction
+
 class ComplexMatrix:
     values = list()
     m = 0  # wiersze
@@ -35,7 +37,7 @@ class ComplexMatrix:
 class RealMatrix(ComplexMatrix):
     @staticmethod
     def prompt_row_values():
-        return list(map(int, input().split(' ')))
+        return [float(Fraction(value)) for value in input().split(' ')]
 
     def print_values(self):
         def round_if_needed(number):

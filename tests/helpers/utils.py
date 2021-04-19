@@ -16,6 +16,7 @@ def mock_input(texts):
             original_input = mock.builtins.input
             mock.builtins.input = lambda: texts_copy.pop(0)
             result = function(*args, **kwargs)
+            assert len(texts_copy) == 0
             mock.builtins.input = original_input
             return result
         return wrapper
@@ -30,7 +31,9 @@ def assert_output(texts):
         def wrapper(self, mock_stdout, *args, **kwargs):
             result = function(self, *args, **kwargs)
 
-            for i, name in enumerate(mock_stdout.getvalue().strip().splitlines()):
+            mocked_lines = mock_stdout.getvalue().strip().splitlines()
+            assert len(mocked_lines) == len(texts), "Different numbers of lines printed than given"
+            for i, name in enumerate(mocked_lines):
                 assert texts[i] == name
 
             return result
