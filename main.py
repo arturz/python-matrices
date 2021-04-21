@@ -1,3 +1,3 @@
-from matrix.operations import ReducedRowEchelonForm
+import matrix.operations
 
-ReducedRowEchelonForm().prompt_values().make().print_values().print_rank()
+print(matrix.operations.TriangularMatrix().prompt_values().invert().print_values())

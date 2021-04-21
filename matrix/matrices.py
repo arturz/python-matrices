@@ -1,6 +1,8 @@
 from fractions import Fraction
+from copy import deepcopy
 
-class ComplexMatrix:
+
+class ComplexMatrix(object):
     values = list()
     m = 0  # wiersze
     n = 0  # kolumny
@@ -11,7 +13,14 @@ class ComplexMatrix:
 
     def prompt_values(self):
         values = list()
-        m, n = list(map(int, input().split(' ')))
+        sizes = list(map(int, input().split(' ')))
+
+        # macierz kwadratowa
+        if len(sizes) == 1:
+            m = sizes[0]
+            n = sizes[0]
+        else:
+            m, n = sizes
 
         for i in range(m):
             values.append(self.prompt_row_values())
@@ -28,10 +37,13 @@ class ComplexMatrix:
 
         return self
 
-    def replace_row(self, index1, index2):
-        first_row = self.values[index1][:]
-        self.values[index1] = self.values[index2][:]
-        self.values[index2] = first_row
+    def copy(self):
+        return deepcopy(self)
+
+    def blank_copy(self):
+        copy = self.copy()
+        [copy.values, copy.m, copy.n] = [list(), 0, 0]
+        return copy
 
 
 class RealMatrix(ComplexMatrix):
@@ -41,7 +53,7 @@ class RealMatrix(ComplexMatrix):
 
     def print_values(self):
         def round_if_needed(number):
-            if round(number, 1) != number:
+            if round(number, 1) != round(number, 10):
                 return "%.2f" % round(number, 2)
             return "%.1f" % number
 
@@ -49,3 +61,8 @@ class RealMatrix(ComplexMatrix):
             print(" ".join([str(round_if_needed(number)) for number in self.values[i]]))
 
         return self
+
+    def clone(self):
+        new_matrix = RealMatrix()
+        [new_matrix.m, new_matrix.n, new_matrix.values] = [self.m, self.n, [row[:] for row in self.values]]
+        return new_matrix
