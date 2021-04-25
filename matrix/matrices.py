@@ -61,8 +61,3 @@ class RealMatrix(ComplexMatrix):
             print(" ".join([str(round_if_needed(number)) for number in self.values[i]]))
 
         return self
-
-    def clone(self):
-        new_matrix = RealMatrix()
-        [new_matrix.m, new_matrix.n, new_matrix.values] = [self.m, self.n, [row[:] for row in self.values]]
-        return new_matrix

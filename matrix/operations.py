@@ -100,11 +100,19 @@ class ReducedRowEchelonForm(MatrixWithOps):
 
         return None, None
 
-    def print_rank(self):  # rząd
+    # rząd
+    # w postaci zredukowanej to ilosc wiodących jedynek
+    def print_rank(self):
         rank = 0
         for row in range(self.m):
-            if any(cell != 0 for cell in self.values[row]):
-                rank = rank + 1
+            for i in range(self.n):
+                if self.values[row][i] == 0:
+                    continue
+                elif self.values[row][i] == 1:
+                    rank = rank + 1
+                    break
+                else:
+                    break
         print(rank)
 
         return self
@@ -243,3 +251,153 @@ class TriangularMatrix(TriangularMatrixOpsMixin, MatrixWithOps):
         elif not is_upper_filled_with_zeros and is_lower_filled_with_zeros:
             return self.__invert_upper()
 
+
+def multiply_row(row, by):
+    return [value * by for value in row]
+
+
+def add_row(row, second_row):
+    return [value + second_row[i] for i, value in enumerate(row)]
+
+
+def subtract_row(row, second_row):
+    return [value - second_row[i] for i, value in enumerate(row)]
+
+
+def row_before_index_has_only_zeros(row, index):
+    return all(row[i] == 0 for i in range(0, index))
+
+
+# (19, 5) => (4, 1)
+# (5, 2) => (1, 2)
+# (6, 2) => (0, 2)
+def get_squeezed_values(a, b):
+    while a > 1 and b > 1:
+        if a > b:
+            a = a - b * (a // b)
+        else:
+            b = b - a * (b // a)
+    return a, b
+
+
+def does_squeezed_values_has_one(a, b):
+    squeezed = get_squeezed_values(a, b)
+    return squeezed[0] == 1 or squeezed[1] == 1
+
+
+class SquareMatrix(MatrixWithOps):
+    def invert(self):
+        new_matrix = self.copy()
+        I = new_matrix.copy()
+        for x in range(I.n):
+            for y in range(I.m):
+                if x == y:
+                    I.values[y][x] = 1
+                else:
+                    I.values[y][x] = 0
+
+        for column in range(new_matrix.n):
+            row_with_leading_one = None
+
+            for row in range(new_matrix.m):
+                if new_matrix.values[row][column] == 1:
+                    if column > 0 and not row_before_index_has_only_zeros(new_matrix.values[row], column):
+                        continue
+
+                    row_with_leading_one = row
+                    break
+                elif new_matrix.values[row][column] == -1:
+                    if column > 0 and not row_before_index_has_only_zeros(new_matrix.values[row], column):
+                        continue
+
+                    # w = w - 2w
+                    # -1 staje sie 1
+                    new_matrix.values[row] = subtract_row(new_matrix.values[row], multiply_row(new_matrix.values[row], 2))
+                    I.values[row] = subtract_row(I.values[row], multiply_row(I.values[row], 2))
+                    row_with_leading_one = row
+                    break
+
+            def get_row_with_leading_one():
+                for i in range(new_matrix.m):
+                    for j in range(new_matrix.m):
+                        original_a, original_b = new_matrix.values[i][column], new_matrix.values[j][column]
+                        squeezed_a, squeezed_b = get_squeezed_values(original_a, original_b)
+
+                        if squeezed_a == 1 or squeezed_b == 1:
+                            if squeezed_a != original_a and column > 0 and not row_before_index_has_only_zeros(new_matrix.values[i], column):
+                                continue
+                            elif squeezed_b != original_b and column > 0 and not row_before_index_has_only_zeros(new_matrix.values[j], column):
+                                continue
+
+                            # powtorz ale zmieniajac cale wiersze zamiast dwoch wartosci
+
+                            while new_matrix.values[i][column] > 1 and new_matrix.values[j][column] > 1:
+                                if new_matrix.values[i][column] > new_matrix.values[j][column]:
+                                    multiply_by = new_matrix.values[i][column] // new_matrix.values[j][column]
+                                    new_matrix.values[i] = subtract_row(
+                                        new_matrix.values[i],
+                                        multiply_row(new_matrix.values[j], multiply_by)
+                                    )
+                                    I.values[i] = subtract_row(
+                                        I.values[i],
+                                        multiply_row(I.values[j], multiply_by)
+                                    )
+                                else:
+                                    multiply_by = new_matrix.values[j][column] // new_matrix.values[i][column]
+                                    new_matrix.values[j] = subtract_row(
+                                        new_matrix.values[j],
+                                        multiply_row(new_matrix.values[i], multiply_by)
+                                    )
+                                    I.values[j] = subtract_row(
+                                        I.values[j],
+                                        multiply_row(I.values[i], multiply_by)
+                                    )
+
+                            if new_matrix.values[i][column] == 1:
+                                return i
+                            elif new_matrix.values[j][column] == 1:
+                                return j
+                            else:
+                                print("BLAD")
+
+                # w ostatecznosci podziel dany wiersz
+
+            if row_with_leading_one is None:
+                row_with_leading_one = get_row_with_leading_one()
+
+            # kolejny schodek musi byc rowny 1
+            # macierz jest kwadratowa wiec column == row
+
+            multiply_by = new_matrix.values[column][column] - 1
+
+            new_matrix.values[column] = subtract_row(
+                new_matrix.values[column],
+                multiply_row(new_matrix.values[row_with_leading_one], multiply_by)
+            )
+            I.values[column] = subtract_row(
+                I.values[column],
+                multiply_row(I.values[row_with_leading_one], multiply_by)
+            )
+
+            new_matrix.print_values()
+            print('-')
+
+            # odejmij od reszty wierszy "row_with_leading_one" pomnozony przez pierwszy element
+
+            for row in range(new_matrix.m):
+                if row != column:
+                    multiply_by = new_matrix.values[row][column]
+
+                    new_matrix.values[row] = subtract_row(
+                        new_matrix.values[row],
+                        multiply_row(new_matrix.values[column], multiply_by)
+                    )
+                    I.values[row] = subtract_row(
+                        I.values[row],
+                        multiply_row(I.values[column], multiply_by)
+                    )
+
+            new_matrix.print_values()
+            print('---')
+
+        return new_matrix
