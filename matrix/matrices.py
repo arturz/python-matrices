@@ -3,17 +3,21 @@ from copy import deepcopy
 
 
 class ComplexMatrix(object):
-    values = list()
-    m = 0  # wiersze
-    n = 0  # kolumny
+    def __init__(self, m=0, n=0):
+        self.m = m  # wiersze
+        self.n = n  # kolumny
+        self.values = list()
+
+        for i in range(self.m):
+            self.values.append([None for _ in range(self.n)])
 
     @staticmethod
     def prompt_row_values():
-        return list(map(complex, input().split(' ')))
+        return list(map(complex, input().split()))
 
     def prompt_values(self):
         values = list()
-        sizes = list(map(int, input().split(' ')))
+        sizes = list(map(int, input().split()))
 
         # macierz kwadratowa
         if len(sizes) == 1:
@@ -49,7 +53,7 @@ class ComplexMatrix(object):
 class RealMatrix(ComplexMatrix):
     @staticmethod
     def prompt_row_values():
-        return [float(Fraction(value)) for value in input().split(' ')]
+        return [float(Fraction(value)) for value in input().split()]
 
     def print_values(self):
         def round_if_needed(number):
@@ -58,6 +62,6 @@ class RealMatrix(ComplexMatrix):
             return "%.1f" % number
 
         for i in range(self.m):
-            print(" ".join([str(round_if_needed(number)) for number in self.values[i]]))
+            print(" ".join([str(round_if_needed(number + 0)) for number in self.values[i]]))
 
         return self

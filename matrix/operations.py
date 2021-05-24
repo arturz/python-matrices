@@ -26,7 +26,7 @@ class BasicMatrixOpsMixin:
 
         new_values = list()
         for row in range(new_matrix.m):  # wiersze
-            new_values.append([])
+            new_values.append(list())
             for column in range(matrix.n):  # kolumny
                 sum = 0
                 for i in range(new_matrix.n):
@@ -51,7 +51,7 @@ class BasicMatrixOpsMixin:
         new_matrix = self.copy()
         new_values = list()
         for i in range(new_matrix.n):
-            new_values.append([])
+            new_values.append(list())
 
         for row in range(new_matrix.m):
             for i in range(new_matrix.n):
@@ -67,7 +67,7 @@ class BasicComplexMatrixOpsMixin:
         new_matrix = self.copy()
         new_values = list()
         for i in range(new_matrix.n):
-            new_values.append([])
+            new_values.append(list())
 
         for row in range(new_matrix.m):
             for i in range(new_matrix.n):
@@ -286,118 +286,65 @@ def does_squeezed_values_has_one(a, b):
 
 
 class SquareMatrix(MatrixWithOps):
-    def invert(self):
-        new_matrix = self.copy()
-        I = new_matrix.copy()
-        for x in range(I.n):
-            for y in range(I.m):
-                if x == y:
-                    I.values[y][x] = 1
-                else:
-                    I.values[y][x] = 0
+    CANNOT_BE_INVERTED = "macierz nieodwracalna"
 
-        for column in range(new_matrix.n):
-            row_with_leading_one = None
+    def get_without_row_and_column(self, row, column):
+        smaller_matrix = SquareMatrix(self.m - 1, self.n - 1)
 
-            for row in range(new_matrix.m):
-                if new_matrix.values[row][column] == 1:
-                    if column > 0 and not row_before_index_has_only_zeros(new_matrix.values[row], column):
-                        continue
+        j, self_j = 0, 0
+        while j < self.n - 1:
+            if j == column:
+                self_j = self_j + 1
 
-                    row_with_leading_one = row
-                    break
-                elif new_matrix.values[row][column] == -1:
-                    if column > 0 and not row_before_index_has_only_zeros(new_matrix.values[row], column):
-                        continue
+            i, self_i = 0, 0
+            while i < self.m - 1:
+                if i == row:
+                    self_i = self_i + 1
 
-                    # w = w - 2w
-                    # -1 staje sie 1
-                    new_matrix.values[row] = subtract_row(new_matrix.values[row], multiply_row(new_matrix.values[row], 2))
-                    I.values[row] = subtract_row(I.values[row], multiply_row(I.values[row], 2))
-                    row_with_leading_one = row
-                    break
+                smaller_matrix.values[i][j] = self.values[self_i][self_j]
+                i, self_i = i + 1, self_i + 1
 
-            def get_row_with_leading_one():
-                for i in range(new_matrix.m):
-                    for j in range(new_matrix.m):
-                        original_a, original_b = new_matrix.values[i][column], new_matrix.values[j][column]
-                        squeezed_a, squeezed_b = get_squeezed_values(original_a, original_b)
+            j, self_j = j + 1, self_j + 1
 
-                        if squeezed_a == 1 or squeezed_b == 1:
-                            if squeezed_a != original_a and column > 0 and not row_before_index_has_only_zeros(new_matrix.values[i], column):
-                                continue
-                            elif squeezed_b != original_b and column > 0 and not row_before_index_has_only_zeros(new_matrix.values[j], column):
-                                continue
+        return smaller_matrix
 
-                            # powtorz ale zmieniajac cale wiersze zamiast dwoch wartosci
+    def get_determinant(self):
+        if self.n == 0:
+            return None
+        elif self.n == 1:
+            return self.values[0][0]
+        elif self.n == 2:
+            return self.values[0][0] * self.values[1][1] - self.values[1][0] * self.values[0][1]
 
-                            while new_matrix.values[i][column] > 1 and new_matrix.values[j][column] > 1:
-                                if new_matrix.values[i][column] > new_matrix.values[j][column]:
-                                    multiply_by = new_matrix.values[i][column] // new_matrix.values[j][column]
-                                    new_matrix.values[i] = subtract_row(
-                                        new_matrix.values[i],
-                                        multiply_row(new_matrix.values[j], multiply_by)
-                                    )
-                                    I.values[i] = subtract_row(
-                                        I.values[i],
-                                        multiply_row(I.values[j], multiply_by)
-                                    )
-                                else:
-                                    multiply_by = new_matrix.values[j][column] // new_matrix.values[i][column]
-                                    new_matrix.values[j] = subtract_row(
-                                        new_matrix.values[j],
-                                        multiply_row(new_matrix.values[i], multiply_by)
-                                    )
-                                    I.values[j] = subtract_row(
-                                        I.values[j],
-                                        multiply_row(I.values[i], multiply_by)
-                                    )
+        # using Laplace expansion
+        determinant = 0
 
-                            if new_matrix.values[i][column] == 1:
-                                return i
-                            elif new_matrix.values[j][column] == 1:
-                                return j
-                            else:
-                                print("BLAD")
+        for column in range(self.n):
+            smaller_matrix = self.get_without_row_and_column(0, column)
+            determinant = determinant + pow(-1, column) * self.values[0][column] * smaller_matrix.get_determinant()
 
-                # w ostatecznosci podziel dany wiersz
+        return determinant
 
-            if row_with_leading_one is None:
-                row_with_leading_one = get_row_with_leading_one()
+    def __analytical_inversion(self):
+        determinant = self.get_determinant()
+        if determinant == 0:
+            print(self.CANNOT_BE_INVERTED)
+            return self.blank_copy()
 
-            # kolejny schodek musi byc rowny 1
-            # macierz jest kwadratowa wiec column == row
+        if self.n == 1:
+            inverted_matrix = SquareMatrix(1, 1)
+            inverted_matrix.values[0][0] = 1 / determinant
+            return inverted_matrix
 
-            multiply_by = new_matrix.values[column][column] - 1
+        cofactors_matrix = self.copy()
+        for row in range(self.m):
+            for column in range(self.n):
+                cofactors_matrix.values[row][column] = pow(-1, row + column) * self.get_without_row_and_column(row, column).get_determinant()
 
-            new_matrix.values[column] = subtract_row(
-                new_matrix.values[column],
-                multiply_row(new_matrix.values[row_with_leading_one], multiply_by)
-            )
-            I.values[column] = subtract_row(
-                I.values[column],
-                multiply_row(I.values[row_with_leading_one], multiply_by)
-            )
+        adjugate_matrix = cofactors_matrix.tran()
+        inverted_matrix = adjugate_matrix.mulsca(1 / determinant)
+        return inverted_matrix
 
-            new_matrix.print_values()
-            print('-')
-
-            # odejmij od reszty wierszy "row_with_leading_one" pomnozony przez pierwszy element
-
-            for row in range(new_matrix.m):
-                if row != column:
-                    multiply_by = new_matrix.values[row][column]
-
-                    new_matrix.values[row] = subtract_row(
-                        new_matrix.values[row],
-                        multiply_row(new_matrix.values[column], multiply_by)
-                    )
-                    I.values[row] = subtract_row(
-                        I.values[row],
-                        multiply_row(I.values[column], multiply_by)
-                    )
-
-            new_matrix.print_values()
-            print('---')
-
-        return new_matrix
+    def invert(self, method="analytical"):
+        if method == "analytical":
+            return self.__analytical_inversion()
